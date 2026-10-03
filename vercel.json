@@ -1,0 +1,16 @@
+{
+  "buildCommand": "next build",
+  "framework": "nextjs",
+  "regions": ["gru1"],
+  "env": {
+    "NEXTAUTH_URL": "@nextauth-url",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "DATABASE_URL": "@database-url",
+    "STRIPE_SECRET_KEY": "@stripe-secret-key",
+    "STRIPE_WEBHOOK_SECRET": "@stripe-webhook-secret",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@stripe-publishable-key",
+    "RESEND_API_KEY": "@resend-api-key",
+    "UPLOADTHING_SECRET": "@uploadthing-secret",
+    "UPLOADTHING_APP_ID": "@uploadthing-app-id"
+  }
+}

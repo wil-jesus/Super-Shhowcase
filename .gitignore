@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+build/
+
+# Env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testes
+coverage/
+
+# Misc
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel
+.env*
