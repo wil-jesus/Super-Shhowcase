@@ -47,7 +47,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@next/swc-win32-x64-msvc": "^14.2.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jest": "^29.5.0",
