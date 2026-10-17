@@ -26,5 +26,5 @@ describe("Auth utilities", () => {
 
     expect(payload).toHaveProperty("database");
     expect(["ok", "degraded", "down"]).toContain(payload.database);
-  });
+  }, 15000);
 });

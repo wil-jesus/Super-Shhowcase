@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyUser } from "@/lib/notifications";
+import { bookingNotificationEmail } from "@/lib/email";
 
 const eventTypes = Object.values(EventType);
 
@@ -83,7 +85,7 @@ export async function POST(req: Request) {
     const client = await prisma.client.findUnique({ where: { userId: session.user.id } });
     const musician = await prisma.musician.findUnique({
       where: { id: musicianId },
-      select: { id: true },
+      select: { id: true, userId: true, stageName: true },
     });
 
     if (!client) {
@@ -146,6 +148,15 @@ export async function POST(req: Request) {
           status: "REQUESTED",
         },
       });
+    });
+
+    await notifyUser({
+      userId: musician.userId,
+      type: "NEW_REQUEST",
+      title: "Nova solicitação de contratação",
+      body: `Você recebeu uma solicitação para o evento "${eventTitle.trim()}"`,
+      bookingId: booking.id,
+      email: bookingNotificationEmail(musician.stageName, eventTitle.trim()),
     });
 
     return NextResponse.json({ booking }, { status: 201 });

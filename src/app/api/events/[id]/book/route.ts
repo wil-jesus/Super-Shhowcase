@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications";
+import { bookingNotificationEmail } from "@/lib/email";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -34,6 +35,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     include: { musician: { select: { id: true, stageName: true, userId: true } }, event: { select: { id: true, title: true, date: true } } },
   });
 
-  await notifyUser({ userId: booking.musician.userId, type: "NEW_REQUEST", title: "Nova solicitação de contratação", body: `Você recebeu uma solicitação para o evento "${booking.event.title}"`, bookingId: booking.id });
+  await notifyUser({ userId: booking.musician.userId, type: "NEW_REQUEST", title: "Nova solicitação de contratação", body: `Você recebeu uma solicitação para o evento "${booking.event.title}"`, bookingId: booking.id, email: bookingNotificationEmail(booking.musician.stageName, booking.event.title) });
   return NextResponse.json(booking, { status: 201 });
 }

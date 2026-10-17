@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
 
 interface NotificationInput {
   userId: string;
@@ -6,9 +7,10 @@ interface NotificationInput {
   title: string;
   body: string;
   bookingId?: string;
+  email?: { subject: string; html: string };
 }
 
-// Cria notificação in-app + registra intenção de email
+// Cria notificação in-app e, se `email` for informado, envia o e-mail sem bloquear a requisição em caso de falha
 export async function notifyUser(input: NotificationInput) {
   const notification = await prisma.notification.create({
     data: {
@@ -20,7 +22,19 @@ export async function notifyUser(input: NotificationInput) {
     },
   });
 
-  // TODO: envio de email real (ver 1.4) e push (FASE 13)
+  if (input.email) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: input.userId },
+        select: { email: true },
+      });
+      if (user?.email) await sendEmail({ to: user.email, ...input.email });
+    } catch (error) {
+      console.error("[notifications] falha ao enviar e-mail", error);
+    }
+  }
+
+  // TODO: push (FASE 13)
   return notification;
 }
 

@@ -1,6 +1,12 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 export async function sendEmail({
   to,
@@ -16,6 +22,7 @@ export async function sendEmail({
     return;
   }
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
     from: "Showcase <noreply@showcase.com>",
     to,
@@ -65,8 +72,8 @@ export function bookingNotificationEmail(name: string, eventTitle: string) {
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
         <h1 style="color: #0ea5e9;">Showcase</h1>
-        <p>Olá ${name},</p>
-        <p>Você recebeu uma nova solicitação para o evento <strong>${eventTitle}</strong>.</p>
+        <p>Olá ${escapeHtml(name)},</p>
+        <p>Você recebeu uma nova solicitação para o evento <strong>${escapeHtml(eventTitle)}</strong>.</p>
         <p>Acesse sua dashboard para aceitar ou recusar.</p>
       </div>
     `,
