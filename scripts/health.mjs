@@ -1,5 +1,5 @@
-// Monitor de saúde: /api/health + últimos deploys + contagem de usuários. Uso: npm run health
-// Env opcionais: HEALTH_URL, DATABASE_URL (contagem de usuários), VERCEL_TOKEN [+ VERCEL_PROJECT_ID, VERCEL_ORG_ID].
+// Monitor de saúde: /api/health + últimos deploys + contagem de usuários. Uso: npm run health [-- --dev]
+// Env opcionais: HEALTH_URL, DATABASE_URL (produção; contagem de usuários), DATABASE_URL_DEV (usado com --dev), VERCEL_TOKEN [+ VERCEL_PROJECT_ID, VERCEL_ORG_ID].
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import prismaPkg from "@prisma/client";
@@ -79,16 +79,16 @@ async function listDeployments() {
 
 async function countUsers() {
   section("Usuários");
-  const url = process.env.DATABASE_URL;
+  const useDev = process.argv.includes("--dev");
+  const varName = useDev ? "DATABASE_URL_DEV" : "DATABASE_URL";
+  const url = process.env[varName];
   if (!url) {
-    console.log("DATABASE_URL ausente; contagem ignorada.");
-    console.log("Para produção: vercel env pull .env.production.local --environment=production");
-    console.log("               node --env-file=.env.production.local scripts/health.mjs");
+    console.log(`${varName} ausente; contagem ignorada.`);
     return;
   }
 
-  console.log(`Banco: ${new URL(url).host} (confirme que é o banco de produção; o .env local aponta para dev)`);
-  const prisma = new prismaPkg.PrismaClient();
+  console.log(`Banco (${useDev ? "dev" : "produção"}, ${varName}): ${new URL(url).host}`);
+  const prisma = new prismaPkg.PrismaClient({ datasourceUrl: url });
   try {
     const rows = await prisma.user.groupBy({ by: ["role", "status"], _count: { _all: true } });
     const total = rows.reduce((sum, r) => sum + r._count._all, 0);
