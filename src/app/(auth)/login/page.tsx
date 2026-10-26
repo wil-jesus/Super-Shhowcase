@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { mutate } from "swr";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardBody } from "@/components/ui/Card";
+import { useSession } from "@/lib/use-session";
+import { homeForRole, safeCallbackUrl } from "@/lib/role-home";
 
 const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -18,14 +21,28 @@ const loginSchema = z.object({
 
 type LoginData = z.infer<typeof loginSchema>;
 
+function resolveTarget(role?: string): string {
+  const callback = safeCallbackUrl(
+    new URLSearchParams(window.location.search).get("callbackUrl"),
+    window.location.origin,
+  );
+  return callback ?? homeForRole(role);
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const { session } = useSession();
   const [serverError, setServerError] = useState("");
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginData>({ resolver: zodResolver(loginSchema) });
+
+  useEffect(() => {
+    if (!session?.user) return;
+    router.replace(resolveTarget(session.user.role));
+  }, [session, router]);
 
   const onSubmit = async (data: LoginData) => {
     setServerError("");
@@ -40,9 +57,28 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    let role: string | undefined;
+    try {
+      const me = await fetch("/api/auth/me", { cache: "no-store" });
+      if (me.ok) role = (await me.json()).user?.role;
+    } catch {
+      // sem role: resolveTarget cai em "/"
+    }
+
+    await mutate("/api/auth/me", undefined, { revalidate: false });
+    router.replace(resolveTarget(role));
     router.refresh();
   };
+
+  if (session?.user) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardBody>
+          <p className="text-sm text-gray-600">Você já está conectado. Redirecionando...</p>
+        </CardBody>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md">

@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
-
-const HOME_BY_ROLE: Record<string, string> = {
-  CLIENT: "/dashboard/client",
-  MUSICIAN: "/dashboard/musician",
-  ADMIN: "/admin",
-};
+import { HOME_BY_ROLE } from "@/lib/role-home";
 
 // ADMIN pode acessar os dashboards de cliente e músico (as APIs já permitem).
 function allowedRoles(pathname: string): string[] | null {
