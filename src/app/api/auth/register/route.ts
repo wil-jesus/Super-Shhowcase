@@ -12,7 +12,7 @@ function isPublicRole(value: unknown): value is (typeof PUBLIC_ROLES)[number] {
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const limit = rateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+  const limit = await rateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json({ error: "Muitas tentativas. Tente novamente em alguns minutos." }, { status: 429 });
   }

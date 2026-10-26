@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}
+
 // ================= AUTH / USERS =================
 
 enum Role {

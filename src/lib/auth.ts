@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@/lib/roles";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, resetRateLimit } from "@/lib/rate-limit";
 
 function getClientIp(req?: { headers?: Record<string, string | string[] | undefined> | Headers }): string {
   if (req && typeof Headers !== "undefined" && req.headers instanceof Headers) {
@@ -43,8 +43,9 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const ip = getClientIp(req as { headers?: Record<string, string | string[] | undefined> | Headers });
-        const limit = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
-        if (!limit.allowed) return null;
+        const limitKey = `login:${ip}`;
+        const limit = await rateLimit(limitKey, 5, 15 * 60 * 1000);
+        if (!limit.allowed) throw new Error("RATE_LIMITED");
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email.trim().toLowerCase() },
@@ -56,6 +57,8 @@ export const authOptions: NextAuthOptions = {
         if (!valid) return null;
 
         if (user.status === "BLOCKED" || user.status === "SUSPENDED") return null;
+
+        await resetRateLimit(limitKey);
 
         return {
           id: user.id,

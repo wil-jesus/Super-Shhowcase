@@ -32,7 +32,11 @@ export default function LoginPage() {
     const result = await signIn("credentials", { ...data, redirect: false });
 
     if (!result || result.error) {
-      setServerError("E-mail ou senha inválidos");
+      setServerError(
+        result?.error === "RATE_LIMITED"
+          ? "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+          : "E-mail ou senha incorretos"
+      );
       return;
     }
 
