@@ -12,6 +12,15 @@ const fetcher = async <T,>(url: string): Promise<T> => {
   return response.json();
 };
 
+export class ApiError extends Error {
+  fields?: Record<string, string>;
+
+  constructor(message: string, fields?: Record<string, string>) {
+    super(message);
+    this.fields = fields;
+  }
+}
+
 async function request<T>(url: string, method: "POST" | "PATCH", payload: unknown): Promise<T> {
   const response = await fetch(url, {
     method,
@@ -21,7 +30,7 @@ async function request<T>(url: string, method: "POST" | "PATCH", payload: unknow
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(body?.error ?? "Falha ao processar a solicitação");
+    throw new ApiError(body?.error ?? "Falha ao processar a solicitação", body?.fields);
   }
 
   return response.json();

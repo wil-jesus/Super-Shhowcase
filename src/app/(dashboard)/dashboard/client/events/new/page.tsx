@@ -8,27 +8,47 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { createEvent } from "@/lib/hooks/use-events";
+import { createEvent, ApiError } from "@/lib/hooks/use-events";
+import { normalizeDecimalInput } from "@/lib/decimal";
+
+const decimal = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(normalizeDecimalInput, schema) as unknown as z.ZodType<z.output<T>, z.ZodTypeDef, z.output<T>>;
+const invalidNumber = { invalid_type_error: "Informe um número válido (ex.: 499,99)" };
 
 const eventSchema = z.object({
   title: z.string().min(3, "Título deve ter no mínimo 3 caracteres").max(120),
   type: z.enum(["WEDDING", "BIRTHDAY", "CORPORATE", "PARTY", "OTHER"]),
-  date: z.string().min(1, "Data é obrigatória"),
-  durationHours: z.coerce.number().min(1, "Mínimo 1 hora").max(24, "Máximo 24 horas"),
+  date: z
+    .string()
+    .min(1, "Data é obrigatória")
+    .refine((value) => new Date(value) > new Date(), "A data do evento deve ser no futuro"),
+  durationHours: decimal(z.coerce.number(invalidNumber).min(1, "Mínimo 1 hora").max(24, "Máximo 24 horas")),
   addressLabel: z.string().max(300).optional(),
-  budget: z.coerce.number().min(0).optional(),
+  budget: decimal(z.coerce.number(invalidNumber).min(0, "O orçamento não pode ser negativo").optional()),
   notes: z.string().max(2000).optional(),
-  latitude: z.coerce.number().min(-90).max(90),
-  longitude: z.coerce.number().min(-180).max(180),
+  latitude: decimal(z.coerce.number(invalidNumber).min(-90, "Latitude entre -90 e 90").max(90, "Latitude entre -90 e 90")),
+  longitude: decimal(z.coerce.number(invalidNumber).min(-180, "Longitude entre -180 e 180").max(180, "Longitude entre -180 e 180")),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
+
+const API_FIELD_TO_FORM: Record<string, keyof EventFormData> = {
+  title: "title",
+  type: "type",
+  date: "date",
+  durationHours: "durationHours",
+  addressLabel: "addressLabel",
+  budget: "budget",
+  notes: "notes",
+  locationLat: "latitude",
+  locationLng: "longitude",
+};
 
 export default function NewEventPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
   const [gettingLocation, setGettingLocation] = useState(false);
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<EventFormData>({
+  const { register, handleSubmit, setValue, setError, formState: { errors, isSubmitting } } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: { type: "OTHER", durationHours: 4, latitude: -23.5505, longitude: -46.6333 },
   });
@@ -70,6 +90,14 @@ export default function NewEventPage() {
       router.push(`/dashboard/client/events/${event.id}`);
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.fields) {
+        for (const [apiField, message] of Object.entries(error.fields)) {
+          const formField = API_FIELD_TO_FORM[apiField];
+          if (formField) setError(formField, { type: "server", message });
+        }
+        setServerError("Corrija os campos destacados abaixo.");
+        return;
+      }
       setServerError(error instanceof Error ? error.message : "Erro ao criar evento");
     }
   };
@@ -95,15 +123,15 @@ export default function NewEventPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input label="Data e hora" type="datetime-local" register={register("date")} error={errors.date?.message} />
-              <Input label="Duração (horas)" type="number" step="0.5" register={register("durationHours")} error={errors.durationHours?.message} />
+              <Input label="Duração (horas)" type="text" inputMode="decimal" register={register("durationHours")} error={errors.durationHours?.message} />
             </div>
             <Input label="Endereço" placeholder="Rua, número, bairro, cidade" register={register("addressLabel")} error={errors.addressLabel?.message} />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Latitude" type="number" step="any" register={register("latitude")} error={errors.latitude?.message} />
-              <Input label="Longitude" type="number" step="any" register={register("longitude")} error={errors.longitude?.message} />
+              <Input label="Latitude" type="text" inputMode="decimal" register={register("latitude")} error={errors.latitude?.message} />
+              <Input label="Longitude" type="text" inputMode="decimal" register={register("longitude")} error={errors.longitude?.message} />
             </div>
             <Button type="button" variant="secondary" size="sm" onClick={getLocation} loading={gettingLocation}>📍 Usar minha localização</Button>
-            <Input label="Orçamento (R$) — opcional" type="number" step="0.01" placeholder="500,00" register={register("budget")} error={errors.budget?.message} />
+            <Input label="Orçamento (R$) — opcional" type="text" inputMode="decimal" placeholder="500,00" register={register("budget")} error={errors.budget?.message} />
             <div>
               <label htmlFor="notes" className="mb-1 block text-sm font-medium text-gray-700">Observações — opcional</label>
               <textarea id="notes" {...register("notes")} rows={3} placeholder="Detalhes sobre o evento, repertório, etc." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500" />
