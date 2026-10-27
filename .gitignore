@@ -25,3 +25,6 @@ coverage/
 npm-debug.log*
 .vercel
 .env*
+tsconfig.tsbuildinfo
+*.lnk
+/git
