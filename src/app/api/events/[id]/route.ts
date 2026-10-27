@@ -2,6 +2,7 @@ import { EventType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { resolveEventAccess } from "@/lib/event-access";
 import { prisma } from "@/lib/prisma";
 
 const eventTypes = Object.values(EventType);
@@ -14,12 +15,21 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const event = await prisma.event.findUnique({
     where: { id: params.id },
     include: {
-      bookings: { include: { musician: { select: { id: true, stageName: true, photoUrl: true, verified: true } } } },
-      client: { select: { id: true, user: { select: { name: true } } } },
+      bookings: { include: { musician: { select: { id: true, userId: true, stageName: true, photoUrl: true, verified: true } } } },
+      client: { select: { id: true, userId: true, user: { select: { name: true } } } },
     },
   });
-  if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
-  return NextResponse.json(event);
+
+  // Sem acesso responde 404 igual a evento inexistente, para não revelar que o ID existe.
+  const access = event ? resolveEventAccess(event, session.user) : null;
+  if (!event || !access) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+
+  const bookings = event.bookings
+    .filter((booking) => access !== "musician" || booking.musician.userId === session.user.id)
+    .map(({ musician: { userId: _musicianUserId, ...musician }, ...booking }) => ({ ...booking, musician }));
+  const { userId: _clientUserId, ...client } = event.client;
+
+  return NextResponse.json({ ...event, bookings, client });
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
