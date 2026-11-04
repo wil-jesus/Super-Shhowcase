@@ -1,3 +1,5 @@
+
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -49,6 +51,8 @@ export async function PUT(req: Request) {
   const latitude = input.latitude;
   const longitude = input.longitude;
   const skills = input.skills;
+  // NOVO: gêneros — se não vier no body, vira lista vazia (não quebra clientes antigos)
+  const genres = Array.isArray(input.genres) ? input.genres : [];
 
   if (
     typeof stageName !== "string" ||
@@ -62,7 +66,8 @@ export async function PUT(req: Request) {
     (latitude !== null && typeof latitude !== "number") ||
     (longitude !== null && typeof longitude !== "number") ||
     !Array.isArray(skills) ||
-    skills.some((skillId) => typeof skillId !== "string")
+    skills.some((skillId) => typeof skillId !== "string") ||
+    genres.some((genreId) => typeof genreId !== "string")
   ) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
@@ -87,6 +92,16 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Habilidade inválida" }, { status: 400 });
   }
 
+  const genreIds = [...new Set(genres as string[])];
+  // CORRIGIDO: o modelo Genre não tem campo `active` — valida só pelos IDs
+  const validGenres = await prisma.genre.findMany({
+    where: { id: { in: genreIds } },
+    select: { id: true },
+  });
+  if (validGenres.length !== genreIds.length) {
+    return NextResponse.json({ error: "Gênero inválido" }, { status: 400 });
+  }
+
   await prisma.$transaction(async (transaction) => {
     await transaction.musician.update({
       where: { id: musician.id },
@@ -105,6 +120,13 @@ export async function PUT(req: Request) {
     if (skillIds.length > 0) {
       await transaction.musicianSkill.createMany({
         data: skillIds.map((skillId) => ({ musicianId: musician.id, skillId })),
+      });
+    }
+    // NOVO: substitui a lista de gêneros (mesmo padrão das skills)
+    await transaction.musicianGenre.deleteMany({ where: { musicianId: musician.id } });
+    if (genreIds.length > 0) {
+      await transaction.musicianGenre.createMany({
+        data: genreIds.map((genreId) => ({ musicianId: musician.id, genreId })),
       });
     }
   });

@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,10 +20,12 @@ interface MusicianProfile {
   priceMin: number | null;
   priceMax: number | null;
   skills: { id: string; name: string }[];
+  genres: { id: string; name: string }[];
 }
 
 export default function EditMusicianProfilePage() {
   const { skills } = useSkills();
+  const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -34,6 +38,7 @@ export default function EditMusicianProfilePage() {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState("");
 
   useEffect(() => {
@@ -50,6 +55,7 @@ export default function EditMusicianProfilePage() {
         setLat(data.latitude?.toString() ?? "");
         setLng(data.longitude?.toString() ?? "");
         setSelectedSkills(data.skills?.map((skill) => skill.id) ?? []);
+        setSelectedGenres(data.genres?.map((genre) => genre.id) ?? []);
         setPhotoUrl(data.photoUrl ?? "");
       } catch {
         setError("Não foi possível carregar o perfil");
@@ -60,9 +66,30 @@ export default function EditMusicianProfilePage() {
     loadProfile();
   }, []);
 
+  // NOVO: carrega o catálogo de gêneros (mesmo papel do useSkills)
+  useEffect(() => {
+    async function loadGenres() {
+      try {
+        const response = await fetch("/api/genres");
+        if (!response.ok) return;
+        const data = await response.json();
+        setGenres(Array.isArray(data) ? data : data.genres ?? []);
+      } catch {
+        // sem gêneros disponíveis: a seção simplesmente fica vazia
+      }
+    }
+    loadGenres();
+  }, []);
+
   const toggleSkill = (skillId: string) => {
     setSelectedSkills((current) =>
       current.includes(skillId) ? current.filter((id) => id !== skillId) : [...current, skillId],
+    );
+  };
+
+  const toggleGenre = (genreId: string) => {
+    setSelectedGenres((current) =>
+      current.includes(genreId) ? current.filter((id) => id !== genreId) : [...current, genreId],
     );
   };
 
@@ -85,6 +112,7 @@ export default function EditMusicianProfilePage() {
           longitude: lng ? Number(lng) : null,
           photoUrl: photoUrl || null,
           skills: selectedSkills,
+          genres: selectedGenres,
         }),
       });
       if (!response.ok) {
@@ -125,6 +153,11 @@ export default function EditMusicianProfilePage() {
         <Card>
           <CardHeader><h2 className="font-semibold text-gray-900">Habilidades</h2></CardHeader>
           <CardBody><div className="flex flex-wrap gap-2">{skills.map((skill) => <button key={skill.id} type="button" aria-pressed={selectedSkills.includes(skill.id)} onClick={() => toggleSkill(skill.id)}><Badge color={selectedSkills.includes(skill.id) ? "blue" : "gray"}>{skill.name}</Badge></button>)}</div>{selectedSkills.length > 0 && <p className="mt-2 text-xs text-gray-400">{selectedSkills.length} habilidade(s) selecionada(s)</p>}</CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader><h2 className="font-semibold text-gray-900">Gêneros musicais</h2></CardHeader>
+          <CardBody><div className="flex flex-wrap gap-2">{genres.map((genre) => <button key={genre.id} type="button" aria-pressed={selectedGenres.includes(genre.id)} onClick={() => toggleGenre(genre.id)}><Badge color={selectedGenres.includes(genre.id) ? "purple" : "gray"}>{genre.name}</Badge></button>)}</div>{selectedGenres.length > 0 && <p className="mt-2 text-xs text-gray-400">{selectedGenres.length} gênero(s) selecionado(s)</p>}</CardBody>
         </Card>
 
         <Card>
