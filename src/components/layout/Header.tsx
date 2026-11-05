@@ -23,6 +23,11 @@ export function Header() {
               <Link href={homeForRole(user.role)} className="text-gray-600 hover:text-brand-600">
                 {user.role === "ADMIN" ? "Administração" : "Meu painel"}
               </Link>
+              {user.role === "MUSICIAN" && (
+                <Link href="/dashboard/musician/profile" className="text-gray-600 hover:text-brand-600">
+                  Editar perfil
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/" })}

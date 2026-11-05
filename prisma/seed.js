@@ -8,17 +8,19 @@ const SKILLS = [
   { name: "Bateria", slug: "bateria", category: "INSTRUMENT", synonyms: ["baterista", "drum", "drums"] },
   { name: "Violão", slug: "violao", category: "INSTRUMENT", synonyms: ["violonista", "guitarra acústica"] },
   { name: "Guitarra", slug: "guitarra", category: "INSTRUMENT", synonyms: ["guitarrista", "guitar"] },
+  { name: "Teclado", slug: "teclado", category: "INSTRUMENT", synonyms: ["tecladista", "keyboard", "synth"] },
   { name: "Baixo", slug: "baixo", category: "INSTRUMENT", synonyms: ["baixista", "bass"] },
   { name: "Saxofone", slug: "saxofone", category: "INSTRUMENT", synonyms: ["saxofonista", "sax"] },
   { name: "Trompete", slug: "trompete", category: "INSTRUMENT", synonyms: ["trompetista", "trumpet"] },
   { name: "Violino", slug: "violino", category: "INSTRUMENT", synonyms: ["violinista", "violin"] },
   { name: "Percussão", slug: "percussao", category: "INSTRUMENT", synonyms: ["percussionista", "percussion"] },
   { name: "Voz", slug: "voz", category: "VOCAL", synonyms: ["cantor", "cantora", "vocalista", "singer"] },
+  { name: "Vocal", slug: "vocal", category: "VOCAL", synonyms: ["vocalista", "canto"] },
   { name: "Backing Vocal", slug: "backing-vocal", category: "VOCAL", synonyms: ["backing", "coro", "vocal de apoio"] },
   { name: "DJ", slug: "dj", category: "FUNCTION", synonyms: ["disc jockey", "dj set"] },
 ];
 
-const GENRES = ["MPB", "Sertanejo", "Pop", "Rock", "Jazz", "Samba", "Pagode", "Eletrônica", "Bossa Nova", "Gospel"];
+const GENRES = ["MPB", "Sertanejo", "Pop", "Rock", "Jazz", "Samba", "Pagode", "Eletrônica", "Bossa Nova", "Gospel", "Forró"];
 
 const MUSICIANS = [
   {
@@ -111,7 +113,33 @@ const MUSICIANS = [
   },
 ];
 
+async function seedCatalog() {
+  for (const skill of SKILLS) {
+    await prisma.skill.upsert({
+      where: { slug: skill.slug },
+      update: {},
+      create: skill,
+    });
+  }
+
+  for (const genreName of GENRES) {
+    await prisma.genre.upsert({
+      where: { name: genreName },
+      update: {},
+      create: { name: genreName },
+    });
+  }
+}
+
 async function main() {
+  await seedCatalog();
+
+  // SEED_CATALOG_ONLY=1 popula só Skill/Genre, sem contas de teste.
+  if (process.env.SEED_CATALOG_ONLY === "1") {
+    console.log(`Catálogo populado: ${SKILLS.length} habilidades e ${GENRES.length} gêneros.`);
+    return;
+  }
+
   const passwordHash = await bcrypt.hash("password123", 10);
 
   const admin = await prisma.user.upsert({
@@ -145,22 +173,6 @@ async function main() {
     update: {},
     create: { userId: clientUser.id },
   });
-
-  for (const skill of SKILLS) {
-    await prisma.skill.upsert({
-      where: { slug: skill.slug },
-      update: {},
-      create: skill,
-    });
-  }
-
-  for (const genreName of GENRES) {
-    await prisma.genre.upsert({
-      where: { name: genreName },
-      update: {},
-      create: { name: genreName },
-    });
-  }
 
   for (const musicianData of MUSICIANS) {
     const user = await prisma.user.upsert({
