@@ -33,8 +33,8 @@ export function formatEventDate(iso: string): string {
   });
 }
 
-export function formatBRL(value: number): string {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+export function formatBRL(value: number | string): string {
+  return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export function googleMapsUrl(lat: number, lng: number): string {

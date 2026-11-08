@@ -10,11 +10,19 @@ export async function GET() {
 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const [totalUsers, totalMusicians, totalClients, totalBookings, pendingBookings, completedBookings, disputedBookings, totalRevenue, releasedPayments, newUsersLast30Days, pendingVerifications, openReports] = await Promise.all([
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const [totalUsers, totalMusicians, totalClients, totalBookings, pendingBookings, completedBookings, disputedBookings, totalRevenue, releasedPayments, newUsersLast30Days, pendingVerifications, openReports, pendingFees, feeRevenueThisMonth, pendingFeeAmount] = await Promise.all([
     prisma.user.count(), prisma.musician.count(), prisma.client.count(), prisma.booking.count(),
     prisma.booking.count({ where: { status: "REQUESTED" } }), prisma.booking.count({ where: { status: "COMPLETED" } }), prisma.booking.count({ where: { status: "DISPUTED" } }),
     prisma.payment.aggregate({ _sum: { amount: true } }), prisma.payment.count({ where: { status: "RELEASED" } }),
     prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }), prisma.verification.count({ where: { status: "PENDING" } }), prisma.report.count({ where: { status: "OPEN" } }),
-  ]);
-  return NextResponse.json({ users: { total: totalUsers, musicians: totalMusicians, clients: totalClients, newLast30Days: newUsersLast30Days }, bookings: { total: totalBookings, pending: pendingBookings, completed: completedBookings, disputed: disputedBookings }, payments: { totalRevenue: totalRevenue._sum.amount ?? 0, releasedCount: releasedPayments }, moderation: { pendingVerifications, openReports }, generatedAt: now.toISOString() });
+    prisma.feeCharge.count({ where: { status: "PENDING" } }),
+    prisma.feeCharge.aggregate({
+      where: { status: "PAID", paidAt: { gte: monthStart, lt: nextMonthStart } },
+      _sum: { amount: true },
+    }),
+    prisma.feeCharge.aggregate({ where: { status: "PENDING" }, _sum: { amount: true } }),
+      ]);
+  return NextResponse.json({ users: { total: totalUsers, musicians: totalMusicians, clients: totalClients, newLast30Days: newUsersLast30Days }, bookings: { total: totalBookings, pending: pendingBookings, completed: completedBookings, disputed: disputedBookings }, payments: { totalRevenue: totalRevenue._sum.amount ?? 0, releasedCount: releasedPayments }, fees: { paidThisMonth: feeRevenueThisMonth._sum.amount ?? 0, pendingAmount: pendingFeeAmount._sum.amount ?? 0 }, moderation: { pendingVerifications, openReports, pendingFees }, generatedAt: now.toISOString() });
 }

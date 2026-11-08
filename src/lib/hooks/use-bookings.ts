@@ -30,13 +30,23 @@ async function patch<T>(url: string, payload: unknown): Promise<T> {
 export interface BookingItem {
   id: string;
   status: string;
-  value: number | null;
+  // Campos Decimal do Prisma são serializados como string no JSON.
+  value: number | string | null;
+  feeRate?: number | string;
+  platformFee?: number | string;
+  netAmount?: number | string;
+  paymentClaimedAt?: string | null;
+  paidAt?: string | null;
+  clientConfirmedAt?: string | null;
+  musicianConfirmedAt?: string | null;
+  completedAt?: string | null;
   notes?: string | null;
   createdAt: string;
   event: { id: string; title: string; date: string; type: string; addressLabel: string | null; notes?: string | null };
   musician: { id: string; stageName: string; photoUrl: string | null; verified: boolean };
   client?: { id: string; user: { name: string } };
   payment?: { id: string; status: string; amount: number; platformFee: number };
+  receipt?: { id: string; url: string; createdAt: string } | null;
   reviews?: { id: string; rating: number; comment: string | null }[];
 }
 

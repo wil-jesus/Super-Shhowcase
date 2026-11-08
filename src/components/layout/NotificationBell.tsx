@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { markNotificationRead, useNotifications } from "@/lib/hooks/use-notifications";
+import { useRouter } from "next/navigation";
+import { markNotificationRead, useNotifications, type NotificationItem } from "@/lib/hooks/use-notifications";
+import { useSession } from "@/lib/use-session";
 import { Badge } from "@/components/ui/Badge";
 
 export function NotificationBell() {
+  const router = useRouter();
+  const { session } = useSession();
   const { notifications, unreadCount, isLoading, mutate } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -20,11 +24,26 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const handleRead = async (id: string, read: boolean) => {
-    if (read) return;
+  const handleRead = async (notification: NotificationItem) => {
+    if (!notification.read) {
+      try {
+        await markNotificationRead(notification.id);
+        await mutate();
+      } catch (error) {
+        console.error(error);
+      }
+    }
 
-    await markNotificationRead(id);
-    await mutate();
+    if (!notification.bookingId) {
+      if (session?.user.role === "ADMIN" && notification.type.startsWith("FEE_")) {
+        setOpen(false);
+        router.push("/admin/fees");
+      }
+      return;
+    }
+    const base = session?.user.role === "MUSICIAN" ? "/dashboard/musician/bookings" : "/dashboard/client/bookings";
+    setOpen(false);
+    router.push(`${base}/${notification.bookingId}`);
   };
 
   return (
@@ -70,7 +89,7 @@ export function NotificationBell() {
               <button
                 type="button"
                 key={notification.id}
-                onClick={() => handleRead(notification.id, notification.read)}
+                onClick={() => handleRead(notification)}
                 className={`w-full border-b border-gray-50 p-3 text-left hover:bg-gray-50 ${
                   !notification.read ? "bg-brand-50" : ""
                 }`}

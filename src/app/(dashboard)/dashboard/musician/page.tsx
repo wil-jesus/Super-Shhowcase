@@ -81,9 +81,14 @@ export default function MusicianDashboardPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Meu painel</h1>
-        <Link href="/dashboard/musician/profile" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          Editar perfil
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/musician/financeiro" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Financeiro
+          </Link>
+          <Link href="/dashboard/musician/profile" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            Editar perfil
+          </Link>
+        </div>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3"><p className="text-sm text-red-700">{error}</p></div>}

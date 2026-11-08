@@ -7,27 +7,13 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useEvents } from "@/lib/hooks/use-events";
 import { useBookings } from "@/lib/hooks/use-bookings";
+import { BOOKING_STATUS_COLORS as bookingStatusColors } from "@/lib/booking-status";
 
 const eventStatusColors: Record<string, "gray" | "green" | "yellow" | "red" | "blue"> = {
   OPEN: "blue",
   BOOKED: "green",
   CLOSED: "gray",
   CANCELLED: "red",
-};
-
-const bookingStatusColors: Record<
-  string,
-  "gray" | "green" | "yellow" | "red" | "blue" | "purple"
-> = {
-  REQUESTED: "yellow",
-  PENDING_MUSICIAN: "yellow",
-  ACCEPTED: "blue",
-  REJECTED: "red",
-  CANCELLED: "red",
-  CONFIRMED: "green",
-  IN_PROGRESS: "purple",
-  COMPLETED: "green",
-  DISPUTED: "red",
 };
 
 export default function ClientDashboard() {
@@ -45,15 +31,20 @@ export default function ClientDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Meus eventos</h1>
           <p className="text-sm text-gray-600">Gerencie seus eventos e contratações</p>
         </div>
-        <Link href="/dashboard/client/events/new">
-          <Button>Criar evento</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/client/search">
+            <Button variant="secondary">Buscar músicos</Button>
+          </Link>
+          <Link href="/dashboard/client/events/new">
+            <Button>Criar evento</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Eventos ativos" value={events.filter((event) => ["OPEN", "BOOKED"].includes(event.status)).length} icon="📅" />
         <StatCard label="Solicitações pendentes" value={bookings.filter((booking) => booking.status === "REQUESTED").length} icon="⏳" />
-        <StatCard label="Confirmados" value={bookings.filter((booking) => booking.status === "CONFIRMED").length} icon="✅" />
+        <StatCard label="Pagos" value={bookings.filter((booking) => ["PAID", "IN_PROGRESS"].includes(booking.status)).length} icon="✅" />
         <StatCard label="Concluídos" value={bookings.filter((booking) => booking.status === "COMPLETED").length} icon="🎉" />
       </div>
 

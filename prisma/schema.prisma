@@ -105,6 +105,7 @@ model Musician {
   media         Media[]
   verifications Verification[]
   payouts       Payout[]
+  feeCharges    FeeCharge[]
 }
 
 // ================= CATÁLOGO DE SKILLS =================
@@ -209,15 +210,28 @@ model Booking {
   musicianId String
 
   status        BookingStatus @default(REQUESTED)
-  value         Float?
+  value         Decimal?  @db.Decimal(12, 2)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // Pagamento direto (Fase 1, sem gateway) e conclusão do serviço
+  paymentClaimedAt    DateTime?
+  paidAt              DateTime?
+  clientConfirmedAt   DateTime?
+  musicianConfirmedAt DateTime?
+  completedAt         DateTime?
+
+  // Taxa da plataforma (take rate) calculada na transição para PAID
+  feeRate     Decimal @default(0) @db.Decimal(5, 2)
+  platformFee Decimal @default(0) @db.Decimal(12, 2)
+  netAmount   Decimal @default(0) @db.Decimal(12, 2)
 
   client         Client    @relation(fields: [clientId], references: [id])
   musician       Musician  @relation("MusicianBookings", fields: [musicianId], references: [id])
   event          Event     @relation(fields: [eventId], references: [id])
   reviews        Review[]
   payment        Payment?
+  feeCharge      FeeCharge?
   messages       Message[]
   notifications Notification[]
 
@@ -235,6 +249,29 @@ enum BookingStatus {
   IN_PROGRESS
   COMPLETED
   DISPUTED
+  PENDING_PAYMENT
+  PAYMENT_CLAIMED
+  PAID
+}
+
+enum FeeChargeStatus {
+  PENDING
+  PAID
+}
+
+// Taxa da plataforma devida pelo músico por contratação paga diretamente (Pix).
+model FeeCharge {
+  id         String          @id @default(cuid())
+  musicianId String
+  musician   Musician        @relation(fields: [musicianId], references: [id])
+  bookingId  String?         @unique
+  booking    Booking?        @relation(fields: [bookingId], references: [id])
+  amount     Decimal         @db.Decimal(12, 2)
+  status     FeeChargeStatus @default(PENDING)
+  createdAt  DateTime        @default(now())
+  paidAt     DateTime?
+
+  @@index([musicianId, status])
 }
 
 // ================= DISPONIBILIDADE / AGENDA =================

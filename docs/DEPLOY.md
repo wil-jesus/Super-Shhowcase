@@ -63,15 +63,9 @@ Com `DATABASE_URL` apontando para o Neon de produção, execute:
 npx prisma migrate deploy
 ```
 
-### 5. Configurar o webhook Stripe
+### 5. (Removido) Webhook Stripe
 
-Na dashboard do Stripe, abra **Developers → Webhooks → Add endpoint** e use:
-
-```text
-https://seu-dominio.vercel.app/api/payments/webhook
-```
-
-Habilite `payment_intent.succeeded`, `payment_intent.payment_failed` e `charge.refunded`. Copie o `whsec_...` para `STRIPE_WEBHOOK_SECRET` na Vercel.
+A Fase 1 usa pagamento direto (Pix) e não tem gateway: não há webhook a configurar. Ver [PAYMENTS.md](PAYMENTS.md).
 
 ### 6. Publicar em produção
 

@@ -1,5 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
+
+type NotificationClient = Pick<Prisma.TransactionClient, "user" | "notification">;
 
 interface NotificationInput {
   userId: string;
@@ -8,6 +11,13 @@ interface NotificationInput {
   body: string;
   bookingId?: string;
   email?: { subject: string; html: string };
+}
+
+interface AdminNotificationInput {
+  type: string;
+  title: string;
+  body: string;
+  bookingId?: string;
 }
 
 // Cria notificação in-app e, se `email` for informado, envia o e-mail sem bloquear a requisição em caso de falha
@@ -36,6 +46,30 @@ export async function notifyUser(input: NotificationInput) {
 
   // TODO: push (FASE 13)
   return notification;
+}
+
+export async function notifyAdmins(
+  client: NotificationClient,
+  input: AdminNotificationInput
+) {
+  const admins = await client.user.findMany({
+    where: { role: "ADMIN" },
+    select: { id: true },
+  });
+
+  if (admins.length === 0) return 0;
+
+  const result = await client.notification.createMany({
+    data: admins.map(({ id }) => ({
+      userId: id,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      bookingId: input.bookingId,
+    })),
+  });
+
+  return result.count;
 }
 
 // Notifica todos os participantes de um booking

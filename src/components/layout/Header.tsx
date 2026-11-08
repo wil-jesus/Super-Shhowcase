@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useSession } from "@/lib/use-session";
 import { homeForRole } from "@/lib/role-home";
 
@@ -11,12 +12,13 @@ export function Header() {
   const user = session?.user;
 
   return (
-    <header className="border-b border-gray-200 bg-white">
+    <header className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
         <Link href="/" className="text-xl font-bold text-brand-600">
           Showcase
         </Link>
         <nav className="flex items-center gap-4 text-sm">
+          <ThemeToggle />
           {isLoading ? null : user ? (
             <>
               <NotificationBell />

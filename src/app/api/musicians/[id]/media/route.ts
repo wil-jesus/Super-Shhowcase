@@ -34,7 +34,7 @@ function fileKeyFromUrl(url: string): string | null {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const media = await prisma.media.findMany({
-    where: { musicianId: params.id },
+    where: { musicianId: params.id, type: { in: ["IMAGE", "VIDEO", "AUDIO"] } },
     select: { id: true, type: true, url: true },
   });
 

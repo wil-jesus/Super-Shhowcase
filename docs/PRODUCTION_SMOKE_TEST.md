@@ -16,31 +16,15 @@ UPLOADTHING_SECRET=
 UPLOADTHING_APP_ID=
 ```
 
-## 2) Stripe Connect + webhook em teste
+## 2) Pagamento direto + taxa (Fase 1)
 
-1. Crie uma conta Stripe e ative o modo teste.
-2. Crie um connected account com `Connect` para o músico de teste.
-3. Salve o `acct_...` no perfil do usuário/músico no banco.
-4. Registre o webhook:
+A rota Stripe (`/api/payments/*`) foi removida; não há Stripe Connect nem webhook nesta fase.
+Valide o fluxo descrito em [PAYMENTS.md](PAYMENTS.md) pela interface:
 
-```text
-https://seu-dominio.vercel.app/api/payments/webhook
-```
-
-Eventos mínimos:
-
-- `payment_intent.succeeded`
-- `payment_intent.payment_failed`
-- `charge.refunded`
-
-Valide o cenário de falha usando o Stripe CLI:
-
-```bash
-stripe listen --forward-to localhost:3000/api/payments/webhook
-stripe trigger payment_intent.payment_failed
-```
-
-O objetivo é confirmar que a falha mapeia para `FAILED` no booking/pagamento sem depender de dinheiro real.
+1. Cliente: contratação aceita → "Pagar" → "Já paguei" (`PAYMENT_CLAIMED`).
+2. Músico: "Recebi o pagamento" (`PAID`); conferir `platformFee` e `netAmount` (R$ 1.000 → 60 / 940).
+3. Cliente e músico confirmam o serviço → `COMPLETED`.
+4. Músico vê a taxa em Financeiro; admin a vê em Taxas e marca como paga.
 
 ## 3) Resend + UploadThing
 

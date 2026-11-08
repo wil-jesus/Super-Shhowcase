@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications";
 import { bookingNotificationEmail } from "@/lib/email";
+import { ACTIVE_BOOKING_STATUSES } from "@/lib/booking-flow";
+import { checkMusicianFeeDelinquency, FEE_DELINQUENCY_MESSAGE } from "@/lib/fee-delinquency";
 
 const eventTypes = Object.values(EventType);
 
@@ -78,7 +80,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Tipo de evento inválido" }, { status: 400 });
     }
 
-    if (value != null && (typeof value !== "number" || !Number.isFinite(value) || value < 0)) {
+    if (value != null && (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 9_999_999_999)) {
       return NextResponse.json({ error: "Valor inválido" }, { status: 400 });
     }
 
@@ -96,12 +98,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Músico não encontrado" }, { status: 404 });
     }
 
+    if (await checkMusicianFeeDelinquency(musician.id, musician.stageName)) {
+      return NextResponse.json({ error: FEE_DELINQUENCY_MESSAGE }, { status: 409 });
+    }
+
     const end = new Date(parsedDate.getTime() + durationHours * 60 * 60 * 1000);
     const booking = await prisma.$transaction(async (tx) => {
       const activeBookings = await tx.booking.findMany({
         where: {
           musicianId,
-          status: { in: ["ACCEPTED", "CONFIRMED", "IN_PROGRESS"] },
+          status: { in: ACTIVE_BOOKING_STATUSES },
         },
         select: { event: { select: { date: true, durationHours: true } } },
       });

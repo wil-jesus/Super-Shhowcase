@@ -79,3 +79,16 @@ export function bookingNotificationEmail(name: string, eventTitle: string) {
     `,
   };
 }
+export function decisionEmail(title: string, body: string) {
+  return {
+    subject: `Showcase — ${title}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h1 style="color: #0ea5e9;">Showcase</h1>
+        <p><strong>${escapeHtml(title)}</strong></p>
+        <p>${escapeHtml(body)}</p>
+        <p>Acesse sua dashboard para ver os detalhes.</p>
+      </div>
+    `,
+  };
+}

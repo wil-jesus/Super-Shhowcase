@@ -23,9 +23,14 @@ interface AdminMetrics {
     totalRevenue?: number;
     releasedCount?: number;
   };
+  fees?: {
+    paidThisMonth?: number | string;
+    pendingAmount?: number | string;
+  };
   moderation?: {
     pendingVerifications?: number;
     openReports?: number;
+    pendingFees?: number;
   };
 }
 
@@ -68,7 +73,28 @@ export default function AdminDashboard() {
         <p className="text-sm text-gray-600">Visão geral da plataforma</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        <StatCard
+          icon="💰"
+          label="Receita"
+          value={`R$ ${(metrics.payments?.totalRevenue ?? 0).toFixed(0)}`}
+          sub={`${metrics.payments?.releasedCount ?? 0} pagamentos liberados`}
+        />
+        <StatCard
+          icon="💵"
+          label="Receita do mês"
+          value={formatCurrency(metrics.fees?.paidThisMonth ?? 0)}
+          sub="Taxas recebidas neste mês"
+        />
+        <StatCard
+          icon="⏳"
+          label="Taxas a receber"
+          value={formatCurrency(metrics.fees?.pendingAmount ?? 0)}
+          sub={`${metrics.moderation?.pendingFees ?? 0} cobranças pendentes`}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <StatCard
           icon="👥"
           label="Usuários"
@@ -87,12 +113,6 @@ export default function AdminDashboard() {
           value={metrics.bookings?.total ?? 0}
           sub={`${metrics.bookings?.pending ?? 0} pendentes`}
         />
-        <StatCard
-          icon="💰"
-          label="Receita"
-          value={`R$ ${(metrics.payments?.totalRevenue ?? 0).toFixed(0)}`}
-          sub={`${metrics.payments?.releasedCount ?? 0} pagamentos liberados`}
-        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -110,6 +130,11 @@ export default function AdminDashboard() {
               label="Denúncias em aberto"
               count={metrics.moderation?.openReports ?? 0}
               href="/admin/reports"
+            />
+            <ModerationRow
+              label="Taxas pendentes"
+              count={metrics.moderation?.pendingFees ?? 0}
+              href="/admin/fees"
             />
             <ModerationRow
               label="Bookings em disputa"
@@ -132,6 +157,10 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
+}
+
+function formatCurrency(value: number | string) {
+  return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function StatCard({

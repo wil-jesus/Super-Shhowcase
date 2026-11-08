@@ -30,11 +30,12 @@ REST, JSON, autenticação via JWT/sessão (Auth.js).
 
 ### Contratação (Booking)
 - GET /api/bookings — listar
-- PATCH /api/bookings/:id — aceitar/recusar/confirmar
+- PATCH /api/bookings/:id — transições de status (aceitar, pagamento direto, confirmar recebimento, concluir); ver [PAYMENTS.md](PAYMENTS.md)
 
-### Pagamentos
-- POST /api/payments — iniciar pagamento (escrow)
-- GET /api/payments/:id — status
+### Financeiro / Taxas
+- GET /api/fees — taxas do músico autenticado
+- GET /api/admin/fees — taxas de todos os músicos (admin)
+- PATCH /api/admin/fees/:id — marcar taxa como paga (admin)
 
 ### Avaliações
 - POST /api/reviews — avaliar

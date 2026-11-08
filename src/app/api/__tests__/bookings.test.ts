@@ -10,6 +10,9 @@ const BookingStatusSchema = z.enum([
   "IN_PROGRESS",
   "COMPLETED",
   "DISPUTED",
+  "PENDING_PAYMENT",
+  "PAYMENT_CLAIMED",
+  "PAID",
 ]);
 
 describe("Bookings validation", () => {
